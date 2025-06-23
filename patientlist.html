@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Patient List</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+    }
+
+    .navbar {
+      padding: 10px 20px;
+      background: #2c3e50;
+      color: white;
+      display: flex;
+      align-items: center;
+    }
+
+    .navbar h2 {
+      margin: 0;
+      flex-grow: 1;
+    }
+
+    .menu-btn {
+      font-size: 24px;
+      cursor: pointer;
+      background: none;
+      color: white;
+      border: none;
+    }
+
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-color: #2c3e50;
+      overflow-x: hidden;
+      transition: 0.3s;
+      padding-top: 60px;
+      z-index: 2;
+    }
+
+    .sidebar a {
+      padding: 12px 20px;
+      text-decoration: none;
+      font-size: 18px;
+      color: white;
+      display: block;
+      transition: 0.2s;
+    }
+
+    .sidebar a:hover {
+      background-color: #1a252f;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    #searchInput {
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #6faef1;
+      color: white;
+    }
+
+    button {
+      padding: 6px 12px;
+      margin: 2px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .view-btn { background: orange; }
+    .edit-btn { background: green; }
+    .delete-btn { background: red; }
+  </style>
+
+  <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" onclick="closeNav()">❌ Close</a>
+  <a href="SBAR.html">🏠 Dashboard</a>
+  <a href="login.html">🔓 Logout</a>
+</div>
+
+<!-- Navbar -->
+<div class="navbar">
+  <button class="menu-btn" onclick="openNav()">☰</button>
+  <h2>👥 Patient List - <span id="hospitalName"></span></h2>
+</div>
+
+<div class="container">
+  <input type="text" id="searchInput" placeholder="Search by patient name..." oninput="filterPatients()" />
+  <table>
+    <thead>
+      <tr>
+        <th>Patient Name</th>
+        <th>Room</th>
+        <th>Diagnosis</th>
+        <th>Nurse</th>
+        <th>Timestamp</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="patientTableBody">
+      <!-- Filled by JS -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
+    authDomain: "sbar-tool.firebaseapp.com",
+    projectId: "sbar-tool",
+    storageBucket: "sbar-tool.appspot.com",
+    messagingSenderId: "529664032389",
+    appId: "1:529664032389:web:2cb701c9c684e8618133ec"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  let fullPatientList = [];
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      alert("Not logged in. Redirecting...");
+      window.location.href = "login.html";
+      return;
+    }
+
+    try {
+      const nurseDoc = await db.collection("nurses").doc(user.uid).get();
+      if (!nurseDoc.exists) {
+        alert("Nurse profile not found.");
+        return;
+      }
+
+      const nurse = nurseDoc.data();
+      document.getElementById("hospitalName").textContent = nurse.hospital;
+      sessionStorage.setItem("currentNurse", JSON.stringify(nurse));
+      loadPatients(nurse.hospital);
+    } catch (error) {
+      console.error("Error loading nurse profile:", error);
+      alert("Error loading nurse profile.");
+    }
+  });
+
+  async function loadPatients(hospital) {
+    const tbody = document.getElementById("patientTableBody");
+    tbody.innerHTML = "";
+    fullPatientList = [];
+
+    try {
+      const snapshot = await db.collection("patients")
+        .where("hospital", "==", hospital)
+        .orderBy("timestamp", "desc")
+        .get();
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const id = doc.id;
+        fullPatientList.push({ ...data, id });
+      });
+
+      filterPatients();
+    } catch (error) {
+      console.error("Error loading patients:", error);
+      alert("❌ Error loading patients: " + error.message);
+    }
+  }
+
+  function filterPatients() {
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const tbody = document.getElementById("patientTableBody");
+    tbody.innerHTML = "";
+
+    fullPatientList.forEach(patient => {
+      if (patient.pname.toLowerCase().includes(search)) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${patient.pname}</td>
+          <td>${patient.room || ""}</td>
+          <td>${patient.diagnosis || ""}</td>
+          <td>${patient.nurse || ""}</td>
+          <td>${patient.timestamp ? new Date(patient.timestamp).toLocaleString() : "N/A"}</td>
+          <td>
+            <button class="view-btn" onclick="viewPatient('${patient.id}')">View</button>
+            <button class="edit-btn" onclick="editPatient('${patient.id}')">Edit</button>
+            <button class="delete-btn" onclick="deletePatient('${patient.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    });
+  }
+
+  async function viewPatient(id) {
+    const docSnap = await db.collection("patients").doc(id).get();
+    if (docSnap.exists) {
+      sessionStorage.setItem("viewPatient", JSON.stringify({ ...docSnap.data(), id }));
+      window.location.href = "SBAR.html";
+    }
+  }
+
+  async function editPatient(id) {
+    const docSnap = await db.collection("patients").doc(id).get();
+    if (docSnap.exists) {
+      sessionStorage.setItem("editPatient", JSON.stringify({ data: docSnap.data(), id }));
+      window.location.href = "SBAR.html";
+    }
+  }
+
+  async function deletePatient(id) {
+    if (confirm("Are you sure you want to delete this record?")) {
+      await db.collection("patients").doc(id).delete();
+      alert("✅ Deleted.");
+      const nurse = JSON.parse(sessionStorage.getItem("currentNurse"));
+      loadPatients(nurse.hospital);
+    }
+  }
+
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "200px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+</script>
+
+</body>
+</html>
