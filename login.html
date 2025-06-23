@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-container {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #1877f2;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #145dc3;
+    }
+
+    .register-btn {
+      background-color: #42b72a;
+    }
+
+    .register-btn:hover {
+      background-color: #36a420;
+    }
+
+    #message {
+      color: red;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+
+      .login-container {
+        padding: 20px;
+      }
+
+      input, button {
+        padding: 10px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Nurse Login</h2>
+    <input type="email" id="email" placeholder="Enter email" />
+    <input type="password" id="password" placeholder="Enter password" />
+    <button onclick="login()">Login</button>
+    <button class="register-btn" onclick="location.href='signup.html'">No account? Register here</button>
+    <div id="message"></div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
+  authDomain: "sbar-tool.firebaseapp.com",
+  projectId: "sbar-tool",
+  storageBucket: "sbar-tool.firebasestorage.app",
+  messagingSenderId: "529664032389",
+  appId: "1:529664032389:web:2cb701c9c684e8618133ec",
+  measurementId: "G-KPF92F2ZK4"
+};
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Login function
+    async function login() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const message = document.getElementById('message');
+      message.textContent = "";
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        const nurseDoc = await getDoc(doc(db, "nurses", user.uid));
+        if (!nurseDoc.exists()) {
+          message.textContent = "Nurse profile not found in database.";
+          return;
+        }
+
+        const nurseData = nurseDoc.data();
+
+        sessionStorage.setItem("currentNurse", JSON.stringify({
+          email: nurseData.email,
+          fullname: nurseData.fullname,
+          hospital: nurseData.hospital,
+          department: nurseData.department,
+          uid: user.uid
+        }));
+
+        window.location.href = "SBAR.html";
+      } catch (error) {
+        console.error("Login error:", error);
+        message.textContent = error.message.includes("auth") ? "Invalid email or password." : error.message;
+      }
+    }
+
+    window.login = login;
+  </script>
+
+</body>
+</html>
