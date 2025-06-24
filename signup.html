@@ -95,22 +95,19 @@
 
 <!-- Firebase SDK -->
 <script type="module">
-  // Import Firebase services
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // Your Firebase config here (replace with your own project credentials)
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
-  authDomain: "sbar-tool.firebaseapp.com",
-  projectId: "sbar-tool",
-  storageBucket: "sbar-tool.firebasestorage.app",
-  messagingSenderId: "529664032389",
-  appId: "1:529664032389:web:2cb701c9c684e8618133ec",
-  measurementId: "G-KPF92F2ZK4"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
+    authDomain: "sbar-tool.firebaseapp.com",
+    projectId: "sbar-tool",
+    storageBucket: "sbar-tool.appspot.com", // ✅ FIXED here
+    messagingSenderId: "529664032389",
+    appId: "1:529664032389:web:2cb701c9c684e8618133ec",
+    measurementId: "G-KPF92F2ZK4"
+  };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -119,18 +116,18 @@ const firebaseConfig = {
   document.getElementById('signupForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const fullname = document.getElementById('fullname').value;
-    const email = document.getElementById('email').value;
-    const license = document.getElementById('license').value;
+    const fullname = document.getElementById('fullname').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const license = document.getElementById('license').value.trim();
     const hospital = document.getElementById('hospital').value;
-    const department = document.getElementById('department').value;
+    const department = document.getElementById('department').value.trim();
     const password = document.getElementById('password').value;
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Save nurse profile to Firestore under their UID
+      // Save nurse profile using UID as doc ID
       await setDoc(doc(db, "nurses", user.uid), {
         fullname,
         email,
@@ -139,11 +136,11 @@ const firebaseConfig = {
         department
       });
 
-      alert("Registration successful!");
+      alert("✅ Registration successful!");
       window.location.href = "login.html";
     } catch (error) {
-      alert("Error: " + error.message);
-      console.error(error);
+      console.error("Signup error:", error);
+      alert("❌ Error: " + error.message);
     }
   });
 </script>

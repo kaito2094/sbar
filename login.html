@@ -101,35 +101,37 @@
     <div id="message"></div>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDKs -->
   <script type="module">
-    // Import Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
-  authDomain: "sbar-tool.firebaseapp.com",
-  projectId: "sbar-tool",
-  storageBucket: "sbar-tool.firebasestorage.app",
-  messagingSenderId: "529664032389",
-  appId: "1:529664032389:web:2cb701c9c684e8618133ec",
-  measurementId: "G-KPF92F2ZK4"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
+      authDomain: "sbar-tool.firebaseapp.com",
+      projectId: "sbar-tool",
+      storageBucket: "sbar-tool.appspot.com",  // ✅ FIXED typo here
+      messagingSenderId: "529664032389",
+      appId: "1:529664032389:web:2cb701c9c684e8618133ec",
+      measurementId: "G-KPF92F2ZK4"
+    };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Login function
-    async function login() {
+    // Expose login to window for onclick to work
+    window.login = async function () {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
       const message = document.getElementById('message');
       message.textContent = "";
+
+      if (!email || !password) {
+        message.textContent = "Please fill in both fields.";
+        return;
+      }
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -137,27 +139,32 @@ const firebaseConfig = {
 
         const nurseDoc = await getDoc(doc(db, "nurses", user.uid));
         if (!nurseDoc.exists()) {
-          message.textContent = "Nurse profile not found in database.";
+          message.textContent = "❌ Nurse profile not found in Firestore.";
           return;
         }
 
         const nurseData = nurseDoc.data();
 
+        // Store nurse profile in sessionStorage
         sessionStorage.setItem("currentNurse", JSON.stringify({
-  email: nurseData.email,
-  fullname: nurseData.fullname,
-  hospital: nurseData.hospital, // 🔴 <---- MUST exist
-  department: nurseData.department,
-  uid: user.uid
-}));
+          email: nurseData.email || email,
+          fullname: nurseData.fullname,
+          hospital: nurseData.hospital,
+          department: nurseData.department,
+          uid: user.uid
+        }));
+
+        // Redirect to SBAR dashboard
         window.location.href = "SBAR.html";
       } catch (error) {
         console.error("Login error:", error);
-        message.textContent = error.message.includes("auth") ? "Invalid email or password." : error.message;
+        if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+          message.textContent = "Invalid email or password.";
+        } else {
+          message.textContent = "Login failed: " + error.message;
+        }
       }
-    }
-
-    window.login = login;
+    };
   </script>
 
 </body>
