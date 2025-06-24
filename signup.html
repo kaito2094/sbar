@@ -103,7 +103,7 @@
     apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
     authDomain: "sbar-tool.firebaseapp.com",
     projectId: "sbar-tool",
-    storageBucket: "sbar-tool.appspot.com", // ✅ FIXED here
+    storageBucket: "sbar-tool.appspot.com",
     messagingSenderId: "529664032389",
     appId: "1:529664032389:web:2cb701c9c684e8618133ec",
     measurementId: "G-KPF92F2ZK4"
@@ -127,7 +127,6 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Save nurse profile using UID as doc ID
       await setDoc(doc(db, "nurses", user.uid), {
         fullname,
         email,
@@ -140,7 +139,16 @@
       window.location.href = "login.html";
     } catch (error) {
       console.error("Signup error:", error);
-      alert("❌ Error: " + error.message);
+
+      if (error.code === "auth/email-already-in-use") {
+        alert("⚠️ This email is already registered. Try logging in or using a different email.");
+      } else if (error.code === "auth/invalid-email") {
+        alert("⚠️ Invalid email format. Please check and try again.");
+      } else if (error.code === "auth/weak-password") {
+        alert("⚠️ Password should be at least 6 characters.");
+      } else {
+        alert("❌ Signup failed: " + error.message);
+      }
     }
   });
 </script>
