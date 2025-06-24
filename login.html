@@ -5,9 +5,7 @@
   <title>Login Page</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: Arial, sans-serif;
@@ -75,18 +73,9 @@
     }
 
     @media (max-width: 480px) {
-      body {
-        padding: 10px;
-      }
-
-      .login-container {
-        padding: 20px;
-      }
-
-      input, button {
-        padding: 10px;
-        font-size: 14px;
-      }
+      body { padding: 10px; }
+      .login-container { padding: 20px; }
+      input, button { padding: 10px; font-size: 14px; }
     }
   </style>
 </head>
@@ -111,7 +100,7 @@
       apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
       authDomain: "sbar-tool.firebaseapp.com",
       projectId: "sbar-tool",
-      storageBucket: "sbar-tool.appspot.com",  // ✅ FIXED typo here
+      storageBucket: "sbar-tool.appspot.com",
       messagingSenderId: "529664032389",
       appId: "1:529664032389:web:2cb701c9c684e8618133ec",
       measurementId: "G-KPF92F2ZK4"
@@ -121,12 +110,18 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Expose login to window for onclick to work
     window.login = async function () {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
       const message = document.getElementById('message');
       message.textContent = "";
+
+      // Basic email format check
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        message.textContent = "Please enter a valid email address.";
+        return;
+      }
 
       if (!email || !password) {
         message.textContent = "Please fill in both fields.";
@@ -145,7 +140,6 @@
 
         const nurseData = nurseDoc.data();
 
-        // Store nurse profile in sessionStorage
         sessionStorage.setItem("currentNurse", JSON.stringify({
           email: nurseData.email || email,
           fullname: nurseData.fullname,
@@ -154,14 +148,22 @@
           uid: user.uid
         }));
 
-        // Redirect to SBAR dashboard
         window.location.href = "SBAR.html";
+
       } catch (error) {
         console.error("Login error:", error);
-        if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
-          message.textContent = "Invalid email or password.";
-        } else {
-          message.textContent = "Login failed: " + error.message;
+
+        switch (error.code) {
+          case "auth/invalid-email":
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+            message.textContent = "Invalid email or password.";
+            break;
+          case "auth/too-many-requests":
+            message.textContent = "Too many failed attempts. Please try again later.";
+            break;
+          default:
+            message.textContent = "Login failed. Please try again.";
         }
       }
     };
