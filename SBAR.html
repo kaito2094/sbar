@@ -157,15 +157,16 @@
     <div class="form-group"><label for="nurse">Reporting Nurse</label><input type="text" id="nurse" readonly></div>
     <div class="form-group"><label for="notes">Shift Notes Summary</label><textarea id="notes"></textarea></div>
     <div class="button-group">
-      <button id="submitBtn" onclick="submitSBAR()">Submit SBAR</button>
+      <button id="submitBtn">Submit SBAR</button>
       <button onclick="window.location.href='patientlist.html'" style="background-color: #34a853;">👥 Patient List</button>
     </div>
   </div>
 </div>
 
-<!-- Firebase compat SDK -->
+<!-- Firebase compat SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
 <script>
   const firebaseConfig = {
@@ -180,86 +181,95 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const nurse = JSON.parse(sessionStorage.getItem("currentNurse"));
-  if (!nurse) {
-    alert("Not logged in. Redirecting...");
-    window.location.href = "login.html";
-  } else {
-    document.getElementById("hospital").innerHTML = `<option>${nurse.hospital}</option>`;
-    document.getElementById("department").innerHTML = `<option>${nurse.department}</option>`;
-    document.getElementById("nurse").value = nurse.fullname;
-  }
-
-  const viewPatient = JSON.parse(sessionStorage.getItem("viewPatient"));
-  const editPatient = JSON.parse(sessionStorage.getItem("editPatient"));
-  let isEditMode = false;
-  let editDocId = null;
-
-  if (viewPatient) {
-    document.querySelector("h2").textContent = "👁️ Viewing SBAR Report";
-    fillForm(viewPatient);
-    disableForm();
-    document.getElementById("submitBtn").style.display = "none";
-    sessionStorage.removeItem("viewPatient");
-  } else if (editPatient) {
-    document.querySelector("h2").textContent = "✏️ Editing SBAR Report";
-    fillForm(editPatient.data);
-    isEditMode = true;
-    editDocId = editPatient.id;
-    document.getElementById("submitBtn").textContent = "💾 Save Changes";
-  }
-
-  function fillForm(data) {
-    document.getElementById("shift").value = data.shift || "";
-    document.getElementById("pname").value = data.pname || "";
-    document.getElementById("page").value = data.page || "";
-    document.getElementById("diagnosis").value = data.diagnosis || "";
-    document.getElementById("room").value = data.room || "";
-    document.getElementById("situation").value = data.situation || "";
-    document.getElementById("background").value = data.background || "";
-    document.getElementById("assessment").value = data.assessment || "";
-    document.getElementById("recommendation").value = data.recommendation || "";
-    document.getElementById("notes").value = data.notes || "";
-  }
-
-  function disableForm() {
-    document.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
-  }
-
-  async function submitSBAR() {
-    const patient = {
-      hospital: nurse.hospital.trim().toLowerCase(),
-      department: nurse.department,
-      shift: document.getElementById("shift").value,
-      pname: document.getElementById("pname").value,
-      page: document.getElementById("page").value,
-      diagnosis: document.getElementById("diagnosis").value,
-      room: document.getElementById("room").value,
-      situation: document.getElementById("situation").value,
-      background: document.getElementById("background").value,
-      assessment: document.getElementById("assessment").value,
-      recommendation: document.getElementById("recommendation").value,
-      nurse: nurse.fullname,
-      notes: document.getElementById("notes").value,
-      timestamp: new Date().toISOString()
-    };
-
-    try {
-      if (isEditMode && editDocId) {
-        await db.collection("patients").doc(editDocId).set(patient);
-        alert("✅ SBAR report updated.");
-      } else {
-        await db.collection("patients").add(patient);
-        alert("✅ SBAR report submitted.");
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      const nurse = JSON.parse(sessionStorage.getItem("currentNurse"));
+      if (!nurse) {
+        alert("Nurse data missing. Redirecting...");
+        window.location.href = "login.html";
+        return;
       }
 
-      sessionStorage.removeItem("editPatient");
-      window.location.href = "patientlist.html";
-    } catch (error) {
-      console.error("Error saving report:", error);
-      alert("❌ Failed to save report. Please try again.");
+      document.getElementById("hospital").innerHTML = `<option>${nurse.hospital}</option>`;
+      document.getElementById("department").innerHTML = `<option>${nurse.department}</option>`;
+      document.getElementById("nurse").value = nurse.fullname;
+
+      const viewPatient = JSON.parse(sessionStorage.getItem("viewPatient"));
+      const editPatient = JSON.parse(sessionStorage.getItem("editPatient"));
+      let isEditMode = false;
+      let editDocId = null;
+
+      if (viewPatient) {
+        document.querySelector("h2").textContent = "👁️ Viewing SBAR Report";
+        fillForm(viewPatient);
+        disableForm();
+        document.getElementById("submitBtn").style.display = "none";
+        sessionStorage.removeItem("viewPatient");
+      } else if (editPatient) {
+        document.querySelector("h2").textContent = "✏️ Editing SBAR Report";
+        fillForm(editPatient.data);
+        isEditMode = true;
+        editDocId = editPatient.id;
+        document.getElementById("submitBtn").textContent = "💾 Save Changes";
+      }
+
+      document.getElementById("submitBtn").onclick = async () => {
+        const patient = {
+          hospital: nurse.hospital.trim(),
+          department: nurse.department,
+          shift: document.getElementById("shift").value,
+          pname: document.getElementById("pname").value,
+          page: document.getElementById("page").value,
+          diagnosis: document.getElementById("diagnosis").value,
+          room: document.getElementById("room").value,
+          situation: document.getElementById("situation").value,
+          background: document.getElementById("background").value,
+          assessment: document.getElementById("assessment").value,
+          recommendation: document.getElementById("recommendation").value,
+          nurse: nurse.fullname,
+          notes: document.getElementById("notes").value,
+          timestamp: new Date().toISOString()
+        };
+
+        try {
+          if (isEditMode && editDocId) {
+            await db.collection("patients").doc(editDocId).set(patient);
+            alert("✅ SBAR report updated.");
+          } else {
+            await db.collection("patients").add(patient);
+            alert("✅ SBAR report submitted.");
+          }
+
+          sessionStorage.removeItem("editPatient");
+          window.location.href = "patientlist.html";
+        } catch (error) {
+          console.error("Error saving report:", error);
+          alert("❌ Failed to save report. Please try again.");
+        }
+      };
+
+      function fillForm(data) {
+        document.getElementById("shift").value = data.shift || "";
+        document.getElementById("pname").value = data.pname || "";
+        document.getElementById("page").value = data.page || "";
+        document.getElementById("diagnosis").value = data.diagnosis || "";
+        document.getElementById("room").value = data.room || "";
+        document.getElementById("situation").value = data.situation || "";
+        document.getElementById("background").value = data.background || "";
+        document.getElementById("assessment").value = data.assessment || "";
+        document.getElementById("recommendation").value = data.recommendation || "";
+        document.getElementById("notes").value = data.notes || "";
+      }
+
+      function disableForm() {
+        document.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
+      }
+
+    } else {
+      alert("Not authenticated. Please login.");
+      window.location.href = "login.html";
     }
-  }
+  });
 
   function openNav() {
     document.getElementById("mySidebar").style.width = "200px";
