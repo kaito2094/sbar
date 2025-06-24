@@ -94,6 +94,19 @@
       gap: 10px;
       margin-top: 15px;
     }
+    .required-error {
+      border: 2px solid red !important;
+      background-color: #ffe6e6;
+    }
+    label.required-label {
+      color: red;
+    }
+    .error-message {
+      color: red;
+      font-size: 13px;
+      display: none;
+      margin-top: 2px;
+    }
   </style>
 </head>
 <body>
@@ -138,10 +151,21 @@
 
   <div class="section">
     <h3>2. Patient Information</h3>
-    <div class="form-group"><label for="pname">Patient Name</label><input type="text" id="pname"></div>
-    <div class="form-group"><label for="page">Patient Age</label><input type="number" id="page"></div>
-    <div class="form-group"><label for="diagnosis">Diagnosis</label><input type="text" id="diagnosis"></div>
-    <div class="form-group"><label for="room">Room Number</label><input type="text" id="room"></div>
+    <div class="form-group">
+      <label id="label-pname" for="pname">Patient Name</label>
+      <input type="text" id="pname">
+      <div id="error-pname" class="error-message">⚠️ Required</div>
+    </div>
+    <div class="form-group">
+      <label id="label-page" for="page">Patient Age</label>
+      <input type="number" id="page">
+      <div id="error-page" class="error-message">⚠️ Required</div>
+    </div>
+    <div class="form-group">
+      <label id="label-diagnosis" for="diagnosis">Diagnosis</label>
+      <input type="text" id="diagnosis">
+      <div id="error-diagnosis" class="error-message">⚠️ Required</div>
+    </div>
   </div>
 
   <div class="section">
@@ -163,7 +187,6 @@
   </div>
 </div>
 
-<!-- Firebase compat SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -214,6 +237,31 @@
       }
 
       document.getElementById("submitBtn").onclick = async () => {
+        // Validation for required patient fields
+        const requiredIds = ["pname", "page", "diagnosis"];
+        let hasError = false;
+
+        requiredIds.forEach(id => {
+          const input = document.getElementById(id);
+          const label = document.getElementById("label-" + id);
+          const error = document.getElementById("error-" + id);
+          input.classList.remove("required-error");
+          label.classList.remove("required-label");
+          error.style.display = "none";
+
+          if (!input.value.trim()) {
+            input.classList.add("required-error");
+            label.classList.add("required-label");
+            error.style.display = "block";
+            hasError = true;
+          }
+        });
+
+        if (hasError) {
+          alert("⚠️ Please complete all required patient fields.");
+          return;
+        }
+
         const patient = {
           hospital: nurse.hospital.trim(),
           department: nurse.department,
@@ -264,6 +312,17 @@
       function disableForm() {
         document.querySelectorAll("input, select, textarea").forEach(el => el.disabled = true);
       }
+
+      // Live cleanup of validation
+      ["pname", "page", "diagnosis"].forEach(id => {
+        document.getElementById(id).addEventListener("input", function () {
+          if (this.value.trim()) {
+            this.classList.remove("required-error");
+            document.getElementById("label-" + id).classList.remove("required-label");
+            document.getElementById("error-" + id).style.display = "none";
+          }
+        });
+      });
 
     } else {
       alert("Not authenticated. Please login.");
