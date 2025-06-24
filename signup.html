@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
-
     body {
       font-family: Arial, sans-serif;
       background: #f1f1f1;
@@ -17,7 +16,6 @@
       margin: 0;
       padding: 20px;
     }
-
     .signup-container {
       background: white;
       padding: 30px;
@@ -26,12 +24,10 @@
       width: 100%;
       max-width: 400px;
     }
-
     h2 {
       text-align: center;
       color: #2c3e50;
     }
-
     input, select, button {
       width: 100%;
       padding: 12px;
@@ -40,31 +36,26 @@
       border-radius: 6px;
       font-size: 16px;
     }
-
     button {
       background-color: #3498db;
       color: white;
       border: none;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #2980b9;
     }
-
     .login-btn {
       background-color: #2ecc71;
       margin-top: 5px;
     }
-
     .login-btn:hover {
       background-color: #27ae60;
     }
-
-    @media (max-width: 768px) {
-      .signup-container {
-        padding: 20px;
-      }
+    .loading {
+      text-align: center;
+      font-size: 14px;
+      color: gray;
     }
   </style>
 </head>
@@ -88,6 +79,7 @@
     <input type="text" id="department" placeholder="Department" required>
     <input type="password" id="password" placeholder="Create Password" required>
     <button type="submit">Register</button>
+    <p id="loadingMsg" class="loading" style="display:none;">⏳ Creating account...</p>
   </form>
 
   <button class="login-btn" onclick="window.location.href='login.html'">Already have an account? Login</button>
@@ -96,7 +88,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -105,8 +97,7 @@
     projectId: "sbar-tool",
     storageBucket: "sbar-tool.appspot.com",
     messagingSenderId: "529664032389",
-    appId: "1:529664032389:web:2cb701c9c684e8618133ec",
-    measurementId: "G-KPF92F2ZK4"
+    appId: "1:529664032389:web:2cb701c9c684e8618133ec"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -122,6 +113,9 @@
     const hospital = document.getElementById('hospital').value;
     const department = document.getElementById('department').value.trim();
     const password = document.getElementById('password').value;
+    const loadingMsg = document.getElementById("loadingMsg");
+
+    loadingMsg.style.display = "block";
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -135,17 +129,23 @@
         department
       });
 
-      alert("✅ Registration successful!");
-      window.location.href = "login.html";
+      // Wait for auth state to stabilize before redirecting
+      onAuthStateChanged(auth, (authUser) => {
+        if (authUser) {
+          alert("✅ Registration successful!");
+          window.location.href = "login.html";
+        }
+      });
     } catch (error) {
       console.error("Signup error:", error);
+      loadingMsg.style.display = "none";
 
       if (error.code === "auth/email-already-in-use") {
-        alert("⚠️ This email is already registered. Try logging in or using a different email.");
+        alert("⚠️ This email is already registered.");
       } else if (error.code === "auth/invalid-email") {
-        alert("⚠️ Invalid email format. Please check and try again.");
+        alert("⚠️ Invalid email format.");
       } else if (error.code === "auth/weak-password") {
-        alert("⚠️ Password should be at least 6 characters.");
+        alert("⚠️ Password must be at least 6 characters.");
       } else {
         alert("❌ Signup failed: " + error.message);
       }
