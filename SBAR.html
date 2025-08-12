@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SBAR Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 2;
+      top: 0;
+      left: 0;
+      background-color: #1a73e8;
+      overflow-x: hidden;
+      transition: 0.3s;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      padding: 12px 20px;
+      text-decoration: none;
+      font-size: 18px;
+      color: white;
+      display: block;
+      transition: 0.2s;
+    }
+    .sidebar a:hover { background-color: #1565c0; }
+    .openbtn {
+      font-size: 20px;
+      cursor: pointer;
+      background-color: #1a73e8;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+    }
+    .navbar {
+      background-color: #1a73e8;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .navbar h3 { margin: 0 0 0 10px; }
+    .content {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .form-group { margin-bottom: 15px; }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    textarea { height: 60px; resize: vertical; }
+    button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background-color: #145dc3; }
+    .section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    /* View mode specific styles */
+    .view-mode {
+      background-color: #e8f5e8 !important;
+      border-left: 4px solid #4caf50;
+    }
+    
+    .view-mode input,
+    .view-mode select,
+    .view-mode textarea {
+      background-color: #f9f9f9;
+      cursor: not-allowed;
+    }
+    
+    .back-btn {
+      background-color: #6c757d;
+    }
+    .back-btn:hover {
+      background-color: #5a6268;
+    }
+  </style>
+</head>
+<body>
+
+<div id="mySidebar" class="sidebar">
+  <a href="javascript:void(0)" onclick="closeNav()">❌ Close</a>
+  <a href="javascript:void(0)" onclick="goToPatientList()">👥 Patient List</a>
+  <a href="javascript:void(0)" onclick="goToNewSBAR()">📝 New SBAR</a>
+  <a href="login.html">🔓 Logout</a>
+</div>
+
+<div class="navbar">
+  <button class="openbtn" onclick="openNav()">☰</button>
+  <h3>SBAR Tool</h3>
+</div>
+
+<div id="mainContent" class="content">
+  <h2 id="pageTitle">🧾 SBAR Reporting Dashboard</h2>
+
+  <div class="section" id="workInfoSection">
+    <h3>1. Work Info</h3>
+    <div class="form-group">
+      <label for="hospital">Hospital</label>
+      <select id="hospital" disabled></select>
+    </div>
+    <div class="form-group">
+      <label for="department">Department</label>
+      <select id="department" disabled></select>
+    </div>
+    <div class="form-group">
+      <label for="shift">Shift</label>
+      <select id="shift">
+        <option></option>
+        <option>Morning (6am–2pm)</option>
+        <option>Afternoon (2pm–10pm)</option>
+        <option>Night (10pm–6am)</option>
+        <option>Morning (7am–3pm)</option>
+        <option>Afternoon (3pm–11pm)</option>
+        <option>Night (11pm–7am)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section" id="patientInfoSection">
+    <h3>2. Patient Information</h3>
+    <div class="form-group"><label for="pname">Patient Name</label><input type="text" id="pname"></div>
+    <div class="form-group"><label for="page">Patient Age</label><input type="number" id="page"></div>
+    <div class="form-group"><label for="diagnosis">Diagnosis</label><input type="text" id="diagnosis"></div>
+    <div class="form-group"><label for="room">Room Number</label><input type="text" id="room"></div>
+  </div>
+
+  <div class="section" id="sbarSection">
+    <h3>3. SBAR Form</h3>
+    <div class="form-group"><label for="situation">Situation</label><textarea id="situation"></textarea></div>
+    <div class="form-group"><label for="background">Background</label><textarea id="background"></textarea></div>
+    <div class="form-group"><label for="assessment">Assessment</label><textarea id="assessment"></textarea></div>
+    <div class="form-group"><label for="recommendation">Recommendation</label><textarea id="recommendation"></textarea></div>
+  </div>
+
+  <div class="section" id="signatureSection">
+    <h3>4. Signature & Notes</h3>
+    <div class="form-group"><label for="nurse">Reporting Nurse</label><input type="text" id="nurse" readonly></div>
+    <div class="form-group"><label for="notes">Shift Notes Summary</label><textarea id="notes"></textarea></div>
+    <div class="button-group">
+      <button id="submitBtn">Submit SBAR</button>
+      <button id="backBtn" onclick="window.location.href='patientlist.html'" style="background-color: #34a853;">👥 Patient List</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase compat SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCACFjgnRVKjmL-1s68lLpmGNE79xlhBw8",
+    authDomain: "sbar-tool.firebaseapp.com",
+    projectId: "sbar-tool",
+    storageBucket: "sbar-tool.appspot.com",
+    messagingSenderId: "529664032389",
+    appId: "1:529664032389:web:2cb701c9c684e8618133ec"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+      const nurse = JSON.parse(sessionStorage.getItem("currentNurse"));
+      if (!nurse) {
+        alert("Nurse data missing. Redirecting...");
+        window.location.href = "login.html";
+        return;
+      }
+
+      document.getElementById("hospital").innerHTML = `<option>${nurse.hospital}</option>`;
+      document.getElementById("department").innerHTML = `<option>${nurse.department}</option>`;
+      document.getElementById("nurse").value = nurse.fullname;
+
+      // Check for view or edit mode
+      const viewPatient = sessionStorage.getItem("viewPatient");
+      const editPatient = sessionStorage.getItem("editPatient");
+      let isEditMode = false;
+      let isViewMode = false;
+      let editDocId = null;
+
+      if (viewPatient) {
+        console.log("View mode detected");
+        const patientData = JSON.parse(viewPatient);
+        isViewMode = true;
+        
+        // Update UI for view mode
+        document.getElementById("pageTitle").textContent = "👁️ Viewing SBAR Report";
+        fillForm(patientData);
+        enableViewMode();
+        
+        // Clean up sessionStorage
+        sessionStorage.removeItem("viewPatient");
+        
+      } else if (editPatient) {
+        console.log("Edit mode detected");
+        const editData = JSON.parse(editPatient);
+        isEditMode = true;
+        editDocId = editData.id;
+        
+        // Update UI for edit mode
+        document.getElementById("pageTitle").textContent = "✏️ Editing SBAR Report";
+        fillForm(editData.data);
+        enableEditMode();
+        
+      } else {
+        console.log("Create mode - new SBAR report");
+        // This is create mode (default)
+        document.getElementById("pageTitle").textContent = "📝 Create New SBAR Report";
+        
+        // Ensure all form elements are enabled for new report
+        const formElements = document.querySelectorAll("input:not(#nurse):not(#hospital):not(#department), select:not(#hospital):not(#department), textarea");
+        formElements.forEach(element => {
+          element.disabled = false;
+          element.readOnly = false;
+        });
+        
+        // Ensure submit button shows correct text
+        document.getElementById("submitBtn").textContent = "Submit SBAR";
+        document.getElementById("submitBtn").style.backgroundColor = "#1a73e8";
+      }
+
+      // Submit button handler
+      document.getElementById("submitBtn").onclick = async () => {
+        if (isViewMode) {
+          // In view mode, this shouldn't be visible, but just in case
+          alert("This record is in view-only mode.");
+          return;
+        }
+
+        const patient = {
+          hospital: nurse.hospital.trim(),
+          department: nurse.department,
+          shift: document.getElementById("shift").value,
+          pname: document.getElementById("pname").value,
+          page: document.getElementById("page").value,
+          diagnosis: document.getElementById("diagnosis").value,
+          room: document.getElementById("room").value,
+          situation: document.getElementById("situation").value,
+          background: document.getElementById("background").value,
+          assessment: document.getElementById("assessment").value,
+          recommendation: document.getElementById("recommendation").value,
+          nurse: nurse.fullname,
+          notes: document.getElementById("notes").value,
+          timestamp: new Date().toISOString()
+        };
+
+        try {
+          if (isEditMode && editDocId) {
+            await db.collection("patients").doc(editDocId).set(patient);
+            alert("✅ SBAR report updated successfully!");
+            // Clean up sessionStorage
+            sessionStorage.removeItem("editPatient");
+          } else {
+            await db.collection("patients").add(patient);
+            alert("✅ SBAR report submitted successfully!");
+          }
+
+          // Redirect to patient list
+          window.location.href = "patientlist.html";
+        } catch (error) {
+          console.error("Error saving report:", error);
+          alert("❌ Failed to save report. Please try again.");
+        }
+      };
+
+      function fillForm(data) {
+        if (!data) return;
+        
+        document.getElementById("shift").value = data.shift || "";
+        document.getElementById("pname").value = data.pname || "";
+        document.getElementById("page").value = data.page || "";
+        document.getElementById("diagnosis").value = data.diagnosis || "";
+        document.getElementById("room").value = data.room || "";
+        document.getElementById("situation").value = data.situation || "";
+        document.getElementById("background").value = data.background || "";
+        document.getElementById("assessment").value = data.assessment || "";
+        document.getElementById("recommendation").value = data.recommendation || "";
+        document.getElementById("notes").value = data.notes || "";
+      }
+
+      function enableViewMode() {
+        // Disable all form elements
+        const formElements = document.querySelectorAll("input:not(#nurse), select, textarea");
+        formElements.forEach(element => {
+          element.disabled = true;
+          element.readOnly = true;
+        });
+
+        // Add visual styling for view mode
+        document.querySelectorAll(".section").forEach(section => {
+          section.classList.add("view-mode");
+        });
+
+        // Hide submit button and change back button text
+        document.getElementById("submitBtn").style.display = "none";
+        document.getElementById("backBtn").textContent = "⬅️ Back to Patient List";
+        document.getElementById("backBtn").className = "back-btn";
+
+        // Add a notice at the top
+        const notice = document.createElement("div");
+        notice.style.cssText = `
+          background: #d4edda;
+          color: #155724;
+          padding: 10px 15px;
+          border-radius: 4px;
+          margin-bottom: 20px;
+          border: 1px solid #c3e6cb;
+          text-align: center;
+          font-weight: bold;
+        `;
+        notice.innerHTML = "📋 This SBAR report is in read-only mode";
+        document.getElementById("mainContent").insertBefore(notice, document.getElementById("pageTitle").nextSibling);
+      }
+
+      function enableEditMode() {
+        // Ensure all form elements are enabled (except nurse name and hospital/department)
+        const formElements = document.querySelectorAll("input:not(#nurse):not(#hospital):not(#department), select:not(#hospital):not(#department), textarea");
+        formElements.forEach(element => {
+          element.disabled = false;
+          element.readOnly = false;
+        });
+
+        // Change submit button text and styling
+        document.getElementById("submitBtn").textContent = "💾 Update SBAR Report";
+        document.getElementById("submitBtn").style.backgroundColor = "#28a745";
+        
+        // Change back button text
+        document.getElementById("backBtn").textContent = "❌ Cancel Edit";
+
+        // Add a notice at the top for edit mode
+        const notice = document.createElement("div");
+        notice.style.cssText = `
+          background: #fff3cd;
+          color: #856404;
+          padding: 10px 15px;
+          border-radius: 4px;
+          margin-bottom: 20px;
+          border: 1px solid #ffeaa7;
+          text-align: center;
+          font-weight: bold;
+        `;
+        notice.innerHTML = "✏️ You are editing this SBAR report - make your changes and click 'Update'";
+        document.getElementById("mainContent").insertBefore(notice, document.getElementById("pageTitle").nextSibling);
+      }
+
+    } else {
+      alert("Not authenticated. Please login.");
+      window.location.href = "login.html";
+    }
+  });
+
+  function openNav() {
+    document.getElementById("mySidebar").style.width = "200px";
+  }
+
+  function closeNav() {
+    document.getElementById("mySidebar").style.width = "0";
+  }
+
+  function goToPatientList() {
+    console.log("Patient List clicked");
+    closeNav();
+    window.location.href = "patientlist.html";
+  }
+
+  function goToNewSBAR() {
+    console.log("New SBAR clicked - clearing sessionStorage");
+    
+    // Clear any existing view or edit data to ensure fresh SBAR form
+    sessionStorage.removeItem("viewPatient");
+    sessionStorage.removeItem("editPatient");
+    
+    closeNav();
+    
+    // Reload current page to get fresh form
+    window.location.reload();
+  }
+</script>
+
+</body>
+</html>
